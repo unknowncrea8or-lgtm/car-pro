@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Form Project</title>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    // Data Array
+    let entries = JSON.parse(localStorage.getItem("entries") || "[]");
+
+    function saveData(event) {
+      event.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const vehicle = document.getElementById("vehicle").value.trim();
+      const address = document.getElementById("address").value.trim();
+
+      if (!name || !vehicle || !address) {
+        alert("कृपया सभी फील्ड भरें!");
+        return;
+      }
+
+      entries.push({ name, vehicle, address, time: new Date().toLocaleString() });
+      localStorage.setItem("entries", JSON.stringify(entries));
+
+      alert("डेटा सेव हो गया ✅");
+      document.getElementById("form").reset();
+      showEntries();
+    }
+
+    function showEntries() {
+      const list = document.getElementById("data");
+      list.innerHTML = "";
+      entries.forEach((e, i) => {
+        list.innerHTML += `<tr>
+          <td>${i+1}</td>
+          <td>${e.name}</td>
+          <td>${e.vehicle}</td>
+          <td>${e.address}</td>
+          <td>${e.time}</td>
+        </tr>`;
+      });
+    }
+
+    function downloadCSV() {
+      let csv = "Sr No,Name,Vehicle,Address,Time\n";
+      entries.forEach((e, i) => {
+        csv += `${i+1},${e.name},${e.vehicle},${e.address},${e.time}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "offline-data.csv";
+      a.click();
+    }
+
+    function clearData() {
+      if(confirm("क्या आप सारा डेटा हटाना चाहते हैं?")) {
+        entries = [];
+        localStorage.removeItem("entries");
+        showEntries();
+      }
+    }
+
+    window.onload = showEntries;
+  </script>
+</head>
+<body>
+  <h2>QR Form Project</h2>
+  <form id="form" onsubmit="saveData(event)">
+    <label>नाम: <input id="name" required></label><br><br>
+    <label>गाड़ी नंबर: <input id="vehicle" required></label><br><br>
+    <label>पता: <input id="address" required></label><br><br>
+    <button type="submit">सेव करें</button>
+  </form>
+
+  <h3>Saved Data</h3>
+  <table border="1">
+    <thead>
+      <tr><th>Sr</th><th>Name</th><th>Vehicle</th><th>Address</th><th>Time</th></tr>
+    </thead>
+    <tbody id="data"></tbody>
+  </table>
+
+  <br>
+  <button onclick="downloadCSV()">📥 CSV डाउनलोड करें</button>
+  <button onclick="clearData()">🗑️ सारा डेटा हटाएँ</button>
+</body>
+</html>
