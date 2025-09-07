@@ -1,90 +1,235 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Form Project</title>
-  <link rel="manifest" href="manifest.json">
-  <script>
-    // Data Array
-    let entries = JSON.parse(localStorage.getItem("entries") || "[]");
-
-    function saveData(event) {
-      event.preventDefault();
-      const name = document.getElementById("name").value.trim();
-      const vehicle = document.getElementById("vehicle").value.trim();
-      const address = document.getElementById("address").value.trim();
-
-      if (!name || !vehicle || !address) {
-        alert("कृपया सभी फील्ड भरें!");
-        return;
-      }
-
-      entries.push({ name, vehicle, address, time: new Date().toLocaleString() });
-      localStorage.setItem("entries", JSON.stringify(entries));
-
-      alert("डेटा सेव हो गया ✅");
-      document.getElementById("form").reset();
-      showEntries();
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QR Registration Form — नाम, गाड़ी नंबर, पता</title>
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    /* Reset + base */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html,body { height: 100%; }
+    body{
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 60%);
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
     }
 
-    function showEntries() {
-      const list = document.getElementById("data");
-      list.innerHTML = "";
-      entries.forEach((e, i) => {
-        list.innerHTML += `<tr>
-          <td>${i+1}</td>
-          <td>${e.name}</td>
-          <td>${e.vehicle}</td>
-          <td>${e.address}</td>
-          <td>${e.time}</td>
-        </tr>`;
-      });
+    /* Layout container centered */
+    .shell{
+      width: 100%;
+      max-width: 960px;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 20px;
+      align-items: start;
     }
 
-    function downloadCSV() {
-      let csv = "Sr No,Name,Vehicle,Address,Time\n";
-      entries.forEach((e, i) => {
-        csv += `${i+1},${e.name},${e.vehicle},${e.address},${e.time}\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "offline-data.csv";
-      a.click();
+    /* Single column on small screens */
+    @media (max-width: 880px){
+      .shell{ grid-template-columns: 1fr; padding: 8px; }
     }
 
-    function clearData() {
-      if(confirm("क्या आप सारा डेटा हटाना चाहते हैं?")) {
-        entries = [];
-        localStorage.removeItem("entries");
-        showEntries();
-      }
+    /* Card style */
+    .card{
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.08);
+      padding: 18px;
+      border: 1px solid rgba(15,23,42,0.04);
     }
 
-    window.onload = showEntries;
-  </script>
+    /* Left (form+meta) */
+    .hero { display:flex; flex-direction:column; gap:10px; }
+    h1{ font-size:20px; color:#0b1220; }
+    p.lead{ color:#475569; font-size:14px; line-height:1.4; }
+
+    /* Form */
+    form { display:flex; flex-direction:column; gap:12px; }
+    .row{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width:600px){ .row{ grid-template-columns: 1fr; } }
+
+    label{ font-size:13px; color:#334155; margin-bottom:6px; display:block; }
+    input, textarea {
+      width:100%; padding:11px 12px; border-radius:10px; border:1px solid #e6eef6;
+      background: #fff; font-size:14px; color:#0b1220; outline:none;
+      transition: box-shadow .12s, border-color .12s;
+    }
+    input:focus, textarea:focus{ box-shadow: 0 6px 18px rgba(14,165,233,0.08); border-color:#93c5fd; }
+
+    .controls{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+    button{
+      border:0; cursor:pointer; font-weight:700; border-radius:10px; padding:10px 14px;
+      background: linear-gradient(90deg,#06b6d4,#0ea5e9); color:#002224;
+      box-shadow: 0 6px 18px rgba(14,165,233,0.12);
+    }
+    button.secondary{
+      background: #f1f5f9; color:#0b1220; border:1px solid #e2e8f0; box-shadow:none; font-weight:600;
+    }
+
+    /* Right column: table / status */
+    .side { display:flex; flex-direction:column; gap:12px; }
+    .small{ font-size:13px; color:#64748b; }
+    table{ width:100%; border-collapse:collapse; font-size:13px; }
+    th, td{ padding:10px 8px; text-align:left; border-bottom:1px solid #f1f5f9; }
+    thead th{ font-weight:700; color:#0b1220; background:linear-gradient(180deg,#fbfdff,#f7fbff); position:sticky; top:0; }
+
+    .count{ display:inline-block; padding:6px 10px; background:#e0f2fe; color:#0369a1; border-radius:999px; font-weight:700; font-size:13px; }
+
+    /* footer note centered under layout on small screens */
+    .footer{ grid-column: 1 / -1; text-align:center; color:#94a3b8; font-size:13px; margin-top:6px; }
+  </style>
 </head>
 <body>
-  <h2>QR Form Project</h2>
-  <form id="form" onsubmit="saveData(event)">
-    <label>नाम: <input id="name" required></label><br><br>
-    <label>गाड़ी नंबर: <input id="vehicle" required></label><br><br>
-    <label>पता: <input id="address" required></label><br><br>
-    <button type="submit">सेव करें</button>
-  </form>
+  <div class="shell">
+    <!-- LEFT: form + header -->
+    <div class="card hero">
+      <div>
+        <h1>QR Registration Form</h1>
+        <p class="lead">QR स्कैन करके यह पेज खुलेगा — नीचे नाम, गाड़ी नंबर और पता भरें। सभी एंट्री आपके डिवाइस पर सुरक्षित रहेंगे और आप CSV में डाउनलोड कर सकते हैं।</p>
+        <div class="small">Status: <span id="swStatus">Checking service worker…</span> • <span class="count" id="countBadge">0</span></div>
+      </div>
 
-  <h3>Saved Data</h3>
-  <table border="1">
-    <thead>
-      <tr><th>Sr</th><th>Name</th><th>Vehicle</th><th>Address</th><th>Time</th></tr>
-    </thead>
-    <tbody id="data"></tbody>
-  </table>
+      <form id="entryForm" autocomplete="off" class="card" style="padding:16px;">
+        <div style="font-weight:700;margin-bottom:6px;color:#0b1220">नया रजिस्ट्रेशन</div>
 
-  <br>
-  <button onclick="downloadCSV()">📥 CSV डाउनलोड करें</button>
-  <button onclick="clearData()">🗑️ सारा डेटा हटाएँ</button>
+        <div class="row">
+          <div>
+            <label for="name">पूरा नाम *</label>
+            <input id="name" name="name" required placeholder="उदा: राम कुमार">
+          </div>
+          <div>
+            <label for="vehicle">गाड़ी नंबर *</label>
+            <input id="vehicle" name="vehicle" required placeholder="उदा: MH12AB1234">
+          </div>
+        </div>
+
+        <div>
+          <label for="address">पता *</label>
+          <textarea id="address" name="address" rows="3" required placeholder="पूरा पता लिखें"></textarea>
+        </div>
+
+        <div class="controls">
+          <button type="submit">सेव करें</button>
+          <button type="button" id="exportCsv" class="secondary">CSV (Excel) डाउनलोड</button>
+          <button type="button" id="clearAll" class="secondary">सभी एंट्री हटाएँ</button>
+        </div>
+      </form>
+
+      <div class="small" style="margin-top:6px;">टिप: पहली बार ऑनलाइन खोलें ताकि PWA cache हो सके। बाद में ऑफ़लाइन भी चलेगा।</div>
+    </div>
+
+    <!-- RIGHT: saved entries -->
+    <div class="card side">
+      <div>
+        <div style="font-weight:700;margin-bottom:8px;color:#0b1220">Saved Entries</div>
+        <div class="small">सबसे हाल की एंट्री ऊपर दिखेगी।</div>
+      </div>
+
+      <div style="overflow:auto; max-height:520px;">
+        <table id="dataTable" aria-live="polite">
+          <thead>
+            <tr><th>#</th><th>नाम</th><th>गाड़ी</th><th>पता</th><th>समय</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer card" style="padding:12px;">
+      Made with ♥ — CSV डाउनलोड करके Excel में खोलें।
+    </div>
+  </div>
+
+  <script>
+    // storage key
+    const KEY = 'qr_registration_entries_v1';
+    function loadEntries(){
+      try{ return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ return []; }
+    }
+    function saveEntries(list){ localStorage.setItem(KEY, JSON.stringify(list)); }
+
+    function fmtDate(ts){ return new Date(ts).toLocaleString(); }
+
+    function render(){
+      const data = loadEntries().slice().reverse(); // show most recent first
+      const tbody = document.querySelector('#dataTable tbody');
+      tbody.innerHTML = '';
+      data.forEach((r,i)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i+1}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.vehicle)}</td>
+          <td>${escapeHtml(r.address)}</td>
+          <td>${fmtDate(r.ts)}</td>`;
+        tbody.appendChild(tr);
+      });
+      const count = loadEntries().length;
+      document.getElementById('countBadge').textContent = count;
+    }
+
+    function escapeHtml(s){ if(!s) return ''; return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+
+    // handle form
+    document.getElementById('entryForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const vehicle = document.getElementById('vehicle').value.trim().toUpperCase();
+      const address = document.getElementById('address').value.trim();
+      if(!name || !vehicle || !address){ alert('कृपया सभी अनिवार्य फ़ील्ड भरें।'); return; }
+
+      const entry = { name, vehicle, address, ts: Date.now() };
+      const list = loadEntries();
+      list.push(entry);
+      saveEntries(list);
+      this.reset();
+      render();
+      // small visual confirmation
+      setTimeout(()=>{ alert('सेव हो गया ✅'); }, 50);
+    });
+
+    // export CSV
+    document.getElementById('exportCsv').addEventListener('click', ()=>{
+      const data = loadEntries();
+      if(!data.length){ alert('कोई रिकॉर्ड नहीं।'); return; }
+      const header = ['#','Name','Vehicle','Address','Timestamp'];
+      const rows = data.map((r,i)=>[i+1, r.name, r.vehicle, r.address, new Date(r.ts).toISOString()]);
+      const csv = [header].concat(rows).map(r => r.map(v => `"${(v??'').toString().replaceAll('"','""')}"`).join(',')).join('\r\n');
+      const blob = new Blob([csv], { type:'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'qr-registrations.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // clear
+    document.getElementById('clearAll').addEventListener('click', ()=>{
+      if(confirm('सभी एंट्री हटानी हैं?')){ localStorage.removeItem(KEY); render(); }
+    });
+
+    // service worker register (if present)
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('./sw.js').then(()=> {
+        document.getElementById('swStatus').textContent = 'Service worker registered — offline ready';
+      }).catch(err=>{
+        document.getElementById('swStatus').textContent = 'SW failed: ' + (err && err.message ? err.message : err);
+      });
+    } else {
+      document.getElementById('swStatus').textContent = 'Service worker not supported';
+    }
+
+    // init render
+    render();
+
+    // optional: keyboard Ctrl/Cmd+E to export
+    window.addEventListener('keydown', (e)=>{ if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'e'){ e.preventDefault(); document.getElementById('exportCsv').click(); } });
+  </script>
 </body>
-</html>
